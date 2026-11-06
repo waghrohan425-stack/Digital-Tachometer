@@ -1,0 +1,65 @@
+#include <LiquidCrystal.h>
+
+LiquidCrystal lcd(12, 11, 5, 4, 3, 7);
+
+const int sensorPin = 2;
+
+volatile unsigned int pulseCount = 0;
+
+unsigned long previousMillis = 0;
+unsigned long rpm = 0;
+
+void countPulse()
+{
+    pulseCount++;
+}
+
+void setup()
+{
+    pinMode(sensorPin, INPUT_PULLUP);
+
+    lcd.begin(16, 2);
+    lcd.print("TACHOMETER");
+
+    Serial.begin(9600);
+    Serial.println("Fan Speed Tachometer");
+    Serial.println("Speed (RPM):");
+
+    attachInterrupt(digitalPinToInterrupt(sensorPin),
+                    countPulse, FALLING);
+
+    delay(1000);
+    lcd.clear();
+}
+
+void loop()
+{
+    if (millis() - previousMillis >= 1000)
+    {
+        noInterrupts();
+
+        unsigned int count = pulseCount;
+        pulseCount = 0;
+
+        interrupts();
+
+        // Calculate RPM (One pulse per revolution)
+        rpm = (unsigned long)count * 60UL;
+
+        // Display RPM on LCD
+        lcd.setCursor(0, 0);
+        lcd.print("Fan Speed:      ");
+
+        lcd.setCursor(0, 1);
+        lcd.print("RPM: ");
+        lcd.print(rpm);
+        lcd.print("     ");
+
+        // Display RPM on Serial Monitor
+        Serial.print("Speed = ");
+        Serial.print(rpm);
+        Serial.println(" RPM");
+
+        previousMillis = millis();
+    }
+}
